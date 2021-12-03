@@ -119,3 +119,4 @@ dist
 
 config/
 .env
+test.http
