@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const horseRouter = require('./routes/horse.route');
+const userRouter = require('./routes/user.route');
 const app = express();
 const port = process.env.PORT;
 
@@ -16,7 +17,9 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
+app.use(express.json());
 app.use(horseRouter);
+app.use(userRouter);
 
 app.listen(port, () => {
   console.log(`App listening on http://localhost:${port}`);
