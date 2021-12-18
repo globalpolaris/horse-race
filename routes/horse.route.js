@@ -1,20 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const { authToken } = require('../middleware/verifyJwt.middleware');
 
-router.get('/horse', (req, res) => {
-  res.send('Get Horse');
-});
-
-router.post('/horse', (req, res) => {
-  res.send('Post Horse');
-});
-
-router.put('/horse', (req, res) => {
-  res.send('Update Horse');
-});
-
-router.delete('/horse', (req, res) => {
-  res.send('Delete Horse');
-});
+router
+  .route('/api/horse')
+  .get(authToken, (req, res) => {
+    console.log(req.user);
+    res.send('GET Horse');
+  })
+  .post((req, res) => {
+    res.send('POST HORSE');
+  });
 
 module.exports = router;

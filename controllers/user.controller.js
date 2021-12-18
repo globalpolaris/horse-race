@@ -49,9 +49,16 @@ const login = (req, res) => {
     if (!passwordVerify)
       res.status(400).send({ message: 'Invalid username/password' });
     else {
-      const token = jwt.sign({ username: user.username }, ACCESS_TOKEN_SECRET, {
-        expiresIn: 300,
-      });
+      const ip =
+        req.headers['x-forwarded-for']?.split(',').shift() ||
+        req.socket?.remoteAddress;
+      const token = jwt.sign(
+        { username: user.username, role: user.role, ip_origin: ip },
+        ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: 60,
+        }
+      );
       res.status(200).send({
         accessToken: token,
       });
