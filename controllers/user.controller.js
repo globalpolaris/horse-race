@@ -1,8 +1,7 @@
 const User = require('../models/user.model');
-const { ACCESS_TOKEN_SECRET } = process.env;
 const verifyUser = require('../middleware/verifyUser.middleware');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const refreshToken = require('../controllers/refreshtoken.controller');
 
 const register = async (req, res) => {
   const salt = bcrypt.genSaltSync(parseInt(process.env.SALT_ROUND));
@@ -49,19 +48,17 @@ const login = (req, res) => {
     if (!passwordVerify)
       res.status(400).send({ message: 'Invalid username/password' });
     else {
+      // console.log(user._id);
       const ip =
         req.headers['x-forwarded-for']?.split(',').shift() ||
         req.socket?.remoteAddress;
-      const token = jwt.sign(
-        { username: user.username, role: user.role, ip_origin: ip },
-        ACCESS_TOKEN_SECRET,
-        {
-          expiresIn: 60,
-        }
-      );
-      res.status(200).send({
-        accessToken: token,
-      });
+      try {
+        const data = refreshToken.generateToken(user, ip);
+        res.status(200).send(data);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Internal server error' });
+      }
     }
   });
 };
