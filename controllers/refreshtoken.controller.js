@@ -3,13 +3,24 @@ const jwt = require('jsonwebtoken');
 const { ACCESS_TOKEN_SECRET } = process.env;
 const User = require('../models/user.model');
 
+const findUser = async (reqToken) => {
+  let refreshToken = await RefreshToken.findOne({
+    where: { token: reqToken },
+  });
+  const user = await User.findById(refreshToken.userId);
+  return user;
+};
+
 const checkExpired = (token) => {
+  console.log(token.expiryDate.getTime());
+  console.log(new Date().getTime());
+  console.log(token.expiryDate < new Date());
   return token.expiryDate.getTime() < new Date().getTime();
 };
 
 exports.generateToken = (user, ip) => {
   let expiredAt = new Date();
-  expiredAt.setSeconds(expiredAt.getSeconds() + 120);
+  expiredAt.setSeconds(expiredAt.getSeconds() + 5);
 
   let _refreshToken = new RefreshToken({
     userId: user._id,
@@ -21,7 +32,7 @@ exports.generateToken = (user, ip) => {
     { username: user.username, role: user.role, ip_origin: ip },
     ACCESS_TOKEN_SECRET,
     {
-      expiresIn: 60,
+      expiresIn: 10,
     }
   );
 
@@ -35,8 +46,12 @@ exports.generateToken = (user, ip) => {
 };
 
 exports.newToken = async (req, res) => {
-  const refreshToken = req.headers.cookie.split(';')[2].split('=')[1];
-  const accessToken = req.headers.cookie.split(';')[3].split('=')[1];
+  try {
+    var refreshToken = req.headers.cookie.split(';')[3].split('=')[1] || null;
+    var accessToken = req.headers.cookie.split(';')[2].split('=')[1] || null;
+  } catch (err) {
+    return res.status(400).send({ message: 'Invalid refresh token' });
+  }
   console.log(refreshToken);
   console.log(accessToken);
   const reqToken = refreshToken;
@@ -48,11 +63,21 @@ exports.newToken = async (req, res) => {
       where: { token: reqToken },
     });
     if (!refreshToken) {
+      res.clearCookie('refreshToken');
+      res.clearCookie('accessToken');
       res.status(403).json({ message: 'Invalid refresh token' });
       return;
     }
+    console.log(refreshToken);
     if (checkExpired(refreshToken)) {
-      RefreshToken.deleteOne({ where: { id: refreshToken.id } });
+      res.clearCookie('refreshToken');
+      res.clearCookie('accessToken');
+      console.log(reqToken);
+      RefreshToken.findByIdAndDelete(refreshToken._id, (err, data) => {
+        if (err) res.status(500).send({ message: 'Internal server error' });
+        console.log(data);
+      });
+      console.log(1);
 
       res.status(403).json({
         message: 'Refresh token expired.',
@@ -60,11 +85,13 @@ exports.newToken = async (req, res) => {
       return;
     }
     try {
-      decoded = jwt.verify(accessToken, ACCESS_TOKEN_SECRET);
+      var user = await findUser(reqToken);
     } catch (e) {
+      console.log(e);
+      console.log(refreshToken.token);
       return res.status(401).send({ message: 'Unauthorized' });
     }
-    User.findOne({ username: decoded.username }).exec((err, user) => {
+    User.findOne({ username: user.username }).exec((err, user) => {
       if (err)
         return res.status(500).send({ message: 'internal server error' });
       const ip =
@@ -78,7 +105,7 @@ exports.newToken = async (req, res) => {
         },
         ACCESS_TOKEN_SECRET,
         {
-          expiresIn: 60,
+          expiresIn: 10,
         }
       );
       res.cookie('accessToken', newToken, { httpOnly: true });
@@ -89,7 +116,6 @@ exports.newToken = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-
     return res.status(500).send({ message: err });
   }
 };

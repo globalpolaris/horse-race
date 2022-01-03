@@ -18,16 +18,6 @@ function App() {
     const { data } = await axios.post('/api/refreshtoken');
     console.log(data);
   };
-  // axios
-  //   .post('/user/login', {
-  //     username: e.target.username.value,
-  //     password: e.target.password.value,
-  //   })
-  //   .then(function (response) {
-  //     console.log(response);
-  //     // setToken((response) => response.data);
-  //   })
-  //   .catch((err) => console.error(err));
 
   return (
     <div className="App">

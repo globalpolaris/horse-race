@@ -6,7 +6,8 @@ const { Schema } = mongoose;
 const refreshTokenSchema = new Schema({
   token: {
     type: String,
-    default: uuid(),
+    required: true,
+    default: () => uuid(),
   },
   userId: {
     type: Schema.Types.ObjectId,
