@@ -5,6 +5,8 @@ const userRouter = require('./routes/user.route');
 const refreshTokenRouter = require('./routes/refreshToken.route');
 const app = express();
 const port = process.env.PORT;
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI, {
@@ -19,6 +21,8 @@ db.once('open', () => {
 });
 
 app.use(express.json());
+app.use(cors());
+app.use(cookieParser());
 app.use(horseRouter);
 app.use(userRouter);
 app.use(refreshTokenRouter);

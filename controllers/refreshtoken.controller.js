@@ -28,16 +28,21 @@ exports.generateToken = (user, ip) => {
   const data = {
     username: user.username,
     role: user.role,
-    accessToken: 'Bearer ' + token,
+    accessToken: token,
     refreshToken: _refreshToken.token,
   };
   return data;
 };
 
 exports.newToken = async (req, res) => {
-  const { refreshToken: reqToken } = req.body;
-  if (!reqToken)
+  const refreshToken = req.headers.cookie.split(';')[2].split('=')[1];
+  const accessToken = req.headers.cookie.split(';')[3].split('=')[1];
+  console.log(refreshToken);
+  console.log(accessToken);
+  const reqToken = refreshToken;
+  if (!reqToken) {
     return res.status(403).json({ message: 'No refresh token provided' });
+  }
   try {
     let refreshToken = await RefreshToken.findOne({
       where: { token: reqToken },
@@ -48,13 +53,18 @@ exports.newToken = async (req, res) => {
     }
     if (checkExpired(refreshToken)) {
       RefreshToken.deleteOne({ where: { id: refreshToken.id } });
+
       res.status(403).json({
         message: 'Refresh token expired.',
       });
       return;
     }
-    const { username } = req.body;
-    User.findOne({ username: username }).exec((err, user) => {
+    try {
+      decoded = jwt.verify(accessToken, ACCESS_TOKEN_SECRET);
+    } catch (e) {
+      return res.status(401).send({ message: 'Unauthorized' });
+    }
+    User.findOne({ username: decoded.username }).exec((err, user) => {
       if (err)
         return res.status(500).send({ message: 'internal server error' });
       const ip =
@@ -71,12 +81,15 @@ exports.newToken = async (req, res) => {
           expiresIn: 60,
         }
       );
+      res.cookie('accessToken', newToken, { httpOnly: true });
       return res.status(200).json({
         accessToken: newToken,
         refreshToken: refreshToken.token,
       });
     });
   } catch (err) {
+    console.error(err);
+
     return res.status(500).send({ message: err });
   }
 };

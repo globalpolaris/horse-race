@@ -54,6 +54,8 @@ const login = (req, res) => {
         req.socket?.remoteAddress;
       try {
         const data = refreshToken.generateToken(user, ip);
+        res.cookie('accessToken', data.accessToken, { httpOnly: true });
+        res.cookie('refrehToken', data.refreshToken, { httpOnly: true });
         res.status(200).send(data);
       } catch (err) {
         console.error(err);

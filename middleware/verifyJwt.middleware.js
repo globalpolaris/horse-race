@@ -8,6 +8,7 @@ const authToken = (req, res, next) => {
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, data) => {
     if (err) res.status(401).send({ message: 'Not authorized 401' });
     else {
+      console.log(data);
       req.user = data;
       next();
     }
