@@ -62,7 +62,6 @@ const login = (req, res) => {
         req.socket?.remoteAddress;
       try {
         const data = refreshToken.generateToken(user, ip);
-        res.cookie('accessToken', data.accessToken, { httpOnly: true });
         res.cookie('refreshToken', data.refreshToken, { httpOnly: true });
         return res.status(200).send(data);
       } catch (err) {
@@ -73,10 +72,12 @@ const login = (req, res) => {
   });
 };
 
-const logout = (req, res) => {
-  const token = req.headers.cookie.split(';')[3].split('=')[1] || null;
-  refreshToken.deleteRefreshToken(token);
-  res.clearCookie('accessToken');
+const logout = async (req, res) => {
+  const token = req.headers.cookie.split(';')[2].split('=')[1] || null;
+  const isDeleted = refreshToken.deleteRefreshToken(token);
+  if (isDeleted === null) {
+    return res.status(400).send({ message: 'Invalid refresh token' });
+  }
   res.clearCookie('refreshToken');
   return res.status(200).send({ message: 'Logout success' });
 };

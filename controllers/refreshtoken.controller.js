@@ -45,8 +45,7 @@ exports.generateToken = (user, ip) => {
   return data;
 };
 
-exports.deleteRefreshToken = async (token, res) => {
-  console.log(token);
+exports.deleteRefreshToken = async (token) => {
   if (!token) {
     return res.status(403).json({ message: 'No refresh token provided' });
   }
@@ -57,26 +56,22 @@ exports.deleteRefreshToken = async (token, res) => {
     RefreshToken.findByIdAndDelete(refreshToken._id, (err, data) => {
       if (err) res.status(500).send({ message: 'Internal server error' });
       console.log(data);
+      return data;
     });
-    res.clearCookie('refreshToken');
-    res.clearCookie('accessToken');
-    return res.status(200).send({ message: 'Refresh token deleted' });
   } catch (err) {
     console.log(err);
-    return res.status(500).send({ message: 'Internal server error' });
+    return null;
   }
 };
 
 exports.newToken = async (req, res) => {
   console.log(req.headers);
   try {
-    var refreshToken = req.headers.cookie.split(';')[3].split('=')[1] || null;
-    var accessToken = req.headers.cookie.split(';')[2].split('=')[1] || null;
+    var refreshToken = req.headers.cookie.split(';')[2].split('=')[1] || null;
   } catch (err) {
     return res.status(400).send({ message: 'Invalid refresh token' });
   }
   console.log(refreshToken);
-  console.log(accessToken);
   const reqToken = refreshToken;
   if (!reqToken) {
     return res.status(403).json({ message: 'No refresh token provided' });
@@ -87,13 +82,11 @@ exports.newToken = async (req, res) => {
     });
     if (!refreshToken) {
       res.clearCookie('refreshToken');
-      res.clearCookie('accessToken');
       return res.status(403).json({ message: 'Invalid refresh token' });
     }
     console.log(refreshToken);
     if (checkExpired(refreshToken)) {
       res.clearCookie('refreshToken');
-      res.clearCookie('accessToken');
       console.log(reqToken);
       RefreshToken.findByIdAndDelete(refreshToken._id, (err, data) => {
         if (err) res.status(500).send({ message: 'Internal server error' });
@@ -129,7 +122,6 @@ exports.newToken = async (req, res) => {
           expiresIn: 10,
         }
       );
-      res.cookie('accessToken', newToken, { httpOnly: true });
       return res.status(200).json({
         accessToken: newToken,
         refreshToken: refreshToken.token,

@@ -23,6 +23,7 @@ function App() {
       .then((res) => {
         console.log(res);
         if (res.status === 200) {
+          localStorage.setItem('accessToken', res.data.accessToken);
           localStorage.setItem('username', res.data.username);
           setLoggedIn(true);
           setUser(res.data.username);
@@ -38,11 +39,13 @@ function App() {
       .post('/api/refreshtoken')
       .then((res) => {
         console.log(res);
+        localStorage.setItem('accessToken', res.data.accessToken);
       })
       .catch((err) => {
         console.log(err);
         setUser('Guest');
         localStorage.removeItem('username');
+        localStorage.removeItem('accessToken');
       });
   };
   const logout = (e) => {
@@ -51,6 +54,7 @@ function App() {
       .then((res) => {
         console.log(res);
         localStorage.removeItem('username');
+        localStorage.removeItem('accessToken');
         setLoggedIn(false);
       })
       .catch((err) => {
