@@ -20,7 +20,7 @@ const checkExpired = (token) => {
 
 exports.generateToken = (user, ip) => {
   let expiredAt = new Date();
-  expiredAt.setSeconds(expiredAt.getSeconds() + 5);
+  expiredAt.setSeconds(expiredAt.getSeconds() + 120);
 
   let _refreshToken = new RefreshToken({
     userId: user._id,
@@ -32,7 +32,7 @@ exports.generateToken = (user, ip) => {
     { username: user.username, role: user.role, ip_origin: ip },
     ACCESS_TOKEN_SECRET,
     {
-      expiresIn: 10,
+      expiresIn: 60,
     }
   );
 
@@ -45,7 +45,30 @@ exports.generateToken = (user, ip) => {
   return data;
 };
 
+exports.deleteRefreshToken = async (token, res) => {
+  console.log(token);
+  if (!token) {
+    return res.status(403).json({ message: 'No refresh token provided' });
+  }
+  try {
+    let refreshToken = await RefreshToken.findOne({
+      where: { token: token },
+    });
+    RefreshToken.findByIdAndDelete(refreshToken._id, (err, data) => {
+      if (err) res.status(500).send({ message: 'Internal server error' });
+      console.log(data);
+    });
+    res.clearCookie('refreshToken');
+    res.clearCookie('accessToken');
+    return res.status(200).send({ message: 'Refresh token deleted' });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({ message: 'Internal server error' });
+  }
+};
+
 exports.newToken = async (req, res) => {
+  console.log(req.headers);
   try {
     var refreshToken = req.headers.cookie.split(';')[3].split('=')[1] || null;
     var accessToken = req.headers.cookie.split(';')[2].split('=')[1] || null;
@@ -65,8 +88,7 @@ exports.newToken = async (req, res) => {
     if (!refreshToken) {
       res.clearCookie('refreshToken');
       res.clearCookie('accessToken');
-      res.status(403).json({ message: 'Invalid refresh token' });
-      return;
+      return res.status(403).json({ message: 'Invalid refresh token' });
     }
     console.log(refreshToken);
     if (checkExpired(refreshToken)) {
@@ -79,10 +101,9 @@ exports.newToken = async (req, res) => {
       });
       console.log(1);
 
-      res.status(403).json({
+      return res.status(403).json({
         message: 'Refresh token expired.',
       });
-      return;
     }
     try {
       var user = await findUser(reqToken);

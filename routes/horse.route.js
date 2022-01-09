@@ -5,7 +5,7 @@ const { authToken } = require('../middleware/verifyJwt.middleware');
 router
   .route('/api/horse')
   .get(authToken, (req, res) => {
-    console.log(req);
+    console.log(req.user);
     res.send('GET Horse');
   })
   .post((req, res) => {

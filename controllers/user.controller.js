@@ -2,7 +2,6 @@ const User = require('../models/user.model');
 const verifyUser = require('../middleware/verifyUser.middleware');
 const bcrypt = require('bcryptjs');
 const refreshToken = require('../controllers/refreshtoken.controller');
-
 const register = async (req, res) => {
   const salt = bcrypt.genSaltSync(parseInt(process.env.SALT_ROUND));
   const { username, email, password } = req.body;
@@ -41,12 +40,21 @@ const register = async (req, res) => {
 
 const login = (req, res) => {
   const { username, password } = req.body;
+  console.log(req.body);
+  console.log(username);
+  console.log(password);
+  if (!username || !password) {
+    return res.status(400).json({
+      message: 'Please provide username and password',
+    });
+  }
   User.findOne({ username: username }).exec((err, user) => {
-    if (err) res.status(500).send({ message: 'Internal server error' });
-    if (!user) res.status(400).send({ message: 'Invalid username/password' });
+    if (err) return res.status(500).send({ message: 'Internal server error' });
+    if (!user)
+      return res.status(400).send({ message: 'Invalid username/password' });
     const passwordVerify = bcrypt.compareSync(password, user.password);
     if (!passwordVerify)
-      res.status(400).send({ message: 'Invalid username/password' });
+      return res.status(400).send({ message: 'Invalid username/password' });
     else {
       // console.log(user._id);
       const ip =
@@ -56,13 +64,21 @@ const login = (req, res) => {
         const data = refreshToken.generateToken(user, ip);
         res.cookie('accessToken', data.accessToken, { httpOnly: true });
         res.cookie('refreshToken', data.refreshToken, { httpOnly: true });
-        res.status(200).send(data);
+        return res.status(200).send(data);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: 'Internal server error' });
+        return res.status(500).send({ message: 'Internal server error' });
       }
     }
   });
 };
 
-module.exports = { register, login };
+const logout = (req, res) => {
+  const token = req.headers.cookie.split(';')[3].split('=')[1] || null;
+  refreshToken.deleteRefreshToken(token);
+  res.clearCookie('accessToken');
+  res.clearCookie('refreshToken');
+  return res.status(200).send({ message: 'Logout success' });
+};
+
+module.exports = { register, login, logout };

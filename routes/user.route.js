@@ -7,6 +7,7 @@ router.get('/user', (req, res) => {
 });
 router.post('/user/register', userController.register);
 router.post('/user/login', userController.login);
+router.post('/user/logout', userController.logout);
 router.put('/user', (req, res) => {
   res.send('Get User');
 });
