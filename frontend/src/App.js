@@ -2,9 +2,32 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 const axios = require('axios');
 
+axios.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalConfig = error.config;
+    if (error.response) {
+      if (error.response.status === 401 && !originalConfig._retry) {
+        originalConfig._retry = true;
+        try {
+          const res = await axios.post('/api/refreshtoken');
+          localStorage.setItem('accessToken', res.data.accessToken);
+          return axios(error.response.config);
+        } catch (e) {
+          return Promise.reject(e.response.data);
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 function App() {
   const username = localStorage.getItem('username') || 'Guest';
   const [loggedIn, setLoggedIn] = useState(false);
+  const [horse, setHorse] = useState(false);
   const [user, setUser] = useState(username);
   useEffect(() => {
     const fetchData = async () => {
@@ -62,6 +85,24 @@ function App() {
       });
   };
 
+  const getHorse = (e) => {
+    e.preventDefault();
+    axios
+      .get('/api/horse', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      })
+      .then((res) => {
+        console.log(res);
+        setHorse(true);
+      })
+      .catch((err) => {
+        setHorse(false);
+        console.log(err);
+      });
+  };
+
   return (
     <div className="App">
       <h1>JWT Token Test</h1>
@@ -81,6 +122,11 @@ function App() {
           <input type="submit" value="Logout" />
         </form>
       ) : null}
+
+      <form onSubmit={getHorse}>
+        <input type="submit" value="Get Horse" />
+      </form>
+      {horse ? <h1>Horse</h1> : <h1>Not auth</h1>}
     </div>
   );
 }

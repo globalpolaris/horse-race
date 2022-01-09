@@ -12,7 +12,6 @@ const register = async (req, res) => {
   }
 
   const isUsername = await verifyUser.checkUsername(username);
-  console.log(isUsername);
   if (isUsername) {
     return res.status(400).json({
       message: 'Username already exists',
@@ -40,9 +39,6 @@ const register = async (req, res) => {
 
 const login = (req, res) => {
   const { username, password } = req.body;
-  console.log(req.body);
-  console.log(username);
-  console.log(password);
   if (!username || !password) {
     return res.status(400).json({
       message: 'Please provide username and password',
@@ -62,7 +58,10 @@ const login = (req, res) => {
         req.socket?.remoteAddress;
       try {
         const data = refreshToken.generateToken(user, ip);
-        res.cookie('refreshToken', data.refreshToken, { httpOnly: true });
+        res.cookie('refreshToken', data.refreshToken, {
+          httpOnly: true,
+          sameSite: 'Strict',
+        });
         return res.status(200).send(data);
       } catch (err) {
         console.error(err);

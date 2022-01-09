@@ -12,9 +12,9 @@ const findUser = async (reqToken) => {
 };
 
 const checkExpired = (token) => {
-  console.log(token.expiryDate.getTime());
-  console.log(new Date().getTime());
-  console.log(token.expiryDate < new Date());
+  // console.log(token.expiryDate.getTime());
+  // console.log(new Date().getTime());
+  // console.log(token.expiryDate < new Date());
   return token.expiryDate.getTime() < new Date().getTime();
 };
 
@@ -32,7 +32,7 @@ exports.generateToken = (user, ip) => {
     { username: user.username, role: user.role, ip_origin: ip },
     ACCESS_TOKEN_SECRET,
     {
-      expiresIn: 60,
+      expiresIn: 5,
     }
   );
 
@@ -55,7 +55,7 @@ exports.deleteRefreshToken = async (token) => {
     });
     RefreshToken.findByIdAndDelete(refreshToken._id, (err, data) => {
       if (err) res.status(500).send({ message: 'Internal server error' });
-      console.log(data);
+      // console.log(data);
       return data;
     });
   } catch (err) {
@@ -65,7 +65,7 @@ exports.deleteRefreshToken = async (token) => {
 };
 
 exports.newToken = async (req, res) => {
-  console.log(req.headers);
+  // console.log(req.headers);
   try {
     var refreshToken = req.headers.cookie.split(';')[2].split('=')[1] || null;
   } catch (err) {
@@ -102,7 +102,7 @@ exports.newToken = async (req, res) => {
       var user = await findUser(reqToken);
     } catch (e) {
       console.log(e);
-      console.log(refreshToken.token);
+      // console.log(refreshToken.token);
       return res.status(401).send({ message: 'Unauthorized' });
     }
     User.findOne({ username: user.username }).exec((err, user) => {
