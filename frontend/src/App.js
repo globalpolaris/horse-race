@@ -2,7 +2,25 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 const axios = require('axios');
 
-axios.interceptors.response.use(
+const instance = axios.create({
+  baseURL: 'http://localhost:3000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+instance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+instance.interceptors.response.use(
   (response) => {
     return response;
   },
@@ -13,8 +31,12 @@ axios.interceptors.response.use(
         originalConfig._retry = true;
         try {
           const res = await axios.post('/api/refreshtoken');
+          console.log(res);
           localStorage.setItem('accessToken', res.data.accessToken);
-          return axios(error.response.config);
+          instance.defaults.headers.common[
+            'Authorization'
+          ] = `Bearer ${res.data.accessToken}`;
+          return instance(originalConfig);
         } catch (e) {
           return Promise.reject(e.response.data);
         }
@@ -67,7 +89,6 @@ function App() {
       .catch((err) => {
         console.log(err);
         setUser('Guest');
-        localStorage.removeItem('username');
         localStorage.removeItem('accessToken');
       });
   };
@@ -76,7 +97,7 @@ function App() {
       .post('/user/logout')
       .then((res) => {
         console.log(res);
-        localStorage.removeItem('username');
+        localStorage.setItem('username', 'Guest');
         localStorage.removeItem('accessToken');
         setLoggedIn(false);
       })
@@ -87,7 +108,8 @@ function App() {
 
   const getHorse = (e) => {
     e.preventDefault();
-    axios
+
+    instance
       .get('/api/horse', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
