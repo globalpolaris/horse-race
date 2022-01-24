@@ -20,7 +20,7 @@ const checkExpired = (token) => {
 
 exports.generateToken = (user, ip) => {
   let expiredAt = new Date();
-  expiredAt.setSeconds(expiredAt.getSeconds() + 120);
+  expiredAt.setSeconds(expiredAt.getSeconds() + 15);
 
   let _refreshToken = new RefreshToken({
     userId: user._id,
@@ -32,7 +32,7 @@ exports.generateToken = (user, ip) => {
     { username: user.username, role: user.role, ip_origin: ip },
     ACCESS_TOKEN_SECRET,
     {
-      expiresIn: 5,
+      expiresIn: 10,
     }
   );
 
